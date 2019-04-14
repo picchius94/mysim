@@ -2,4 +2,5 @@
 <launch>
 	<include file="$(find mysim)/launch/hmap.launch"/>
 	<include file="$(find mysim)/launch/rover_spawn.launch"/>
+	<include file="$(find mysim)/launch/rover_control.launch"/>
 </launch>
