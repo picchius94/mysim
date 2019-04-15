@@ -4,4 +4,5 @@
 	<include file="$(find mysim)/launch/rover_spawn.launch"/>
 	<include file="$(find mysim)/launch/rover_control.launch"/>
 	<include file="$(find mysim)/launch/rover_systems.launch"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find mysim)/rviz/rover.rviz"/>
 </launch>
