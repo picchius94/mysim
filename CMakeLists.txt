@@ -5,8 +5,13 @@ project(mysim)
 find_package(catkin REQUIRED COMPONENTS 
   roscpp
   rospy 
-  gazebo_ros 
+  gazebo_ros
+  std_msgs
+  geometry_msgs 
 )
+
+## Add support for C++11, supported in ROS Kinetic and newer
+add_definitions(-std=c++11)
 
 # Depend on system install of Gazebo
 find_package(gazebo REQUIRED)
@@ -18,5 +23,7 @@ catkin_package(
   DEPENDS 
     roscpp
     rospy 
-    gazebo_ros 
+    gazebo_ros
+    std_msgs
+    geometry_msgs 
 )
