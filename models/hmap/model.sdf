@@ -6,7 +6,7 @@
         <collision name="collision">
           <geometry>
             <heightmap>
-              <uri>model://hmap/materials/textures/hmap.png</uri>
+              <uri>model://hmap/materials/textures/hmap2.png</uri>
               <size>129 129 10</size>
               <pos>0 0 0</pos>
             </heightmap>
@@ -39,7 +39,7 @@
                 <min_height>4</min_height>
                 <fade_dist>5</fade_dist>
               </blend>
-              <uri>model://hmap/materials/textures/hmap.png</uri>
+              <uri>model://hmap/materials/textures/hmap2.png</uri>
               <size>129 129 10</size>
               <pos>0 0 0</pos>
             </heightmap>
