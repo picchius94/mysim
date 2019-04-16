@@ -1,12 +1,12 @@
 <?xml version="1.0" ?>
 <sdf version="1.5">
-    <model name="hmap">
+    <model name="hmap2">
       <static>true</static>
       <link name="link">
         <collision name="collision">
           <geometry>
             <heightmap>
-              <uri>model://hmap/materials/textures/hmap.png</uri>
+              <uri>model://hmap2/materials/textures/hmap2.png</uri>
               <size>129 129 3</size>
               <pos>0 0 0</pos>
             </heightmap>
@@ -39,7 +39,7 @@
                 <min_height>0.1</min_height>
                 <fade_dist>1</fade_dist>
               </blend>
-              <uri>model://hmap/materials/textures/hmap.png</uri>
+              <uri>model://hmap2/materials/textures/hmap2.png</uri>
               <size>129 129 3</size>
               <pos>0 0 0</pos>
             </heightmap>
