@@ -39,7 +39,7 @@
                               arm_03_joint_position_controller
                               arm_04_joint_position_controller
                               arm_tools_joint_position_controller
-                              --shutdown-timeout 3">
+                              --shutdown-timeout 1">
                               
   </node>
 <!--shutdown-timeout 3-->

@@ -6,7 +6,7 @@
 	<arg name="gui" default="true"/>
 	<arg name="headless" default="false"/>
 	<arg name="debug" default="false"/>
-	<arg name="world_n" default="hmap.world"/>
+	<arg name="world_n" default="flat.world"/>
 
 
 	<include file="$(find gazebo_ros)/launch/empty_world.launch">

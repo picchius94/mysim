@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import time
 import rospy
+import math
+import numpy as np
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 
@@ -117,8 +119,8 @@ class CuriosityMarsRoverAckerMan(object):
 
     def init_state(self):
         self.set_suspension_mode("standard")
-        self.set_turning_radius(None)
-        self.set_wheels_speed(0.0)
+        self.set_turning_radius(None,0.0)
+        self.set_wheels_speed(None,0.0)
 
     def set_suspension_mode(self, mode_name):
 
@@ -138,46 +140,48 @@ class CuriosityMarsRoverAckerMan(object):
             self.suspension_arm_F_L.publish(self.suspension_arm_F_L_pos_msg)
             self.suspension_arm_F_R.publish(self.suspension_arm_F_R_pos_msg)
 
-    def set_turning_radius(self, turn_radius):
+    def set_turning_radius(self, w_ang, v_lin):
 
-        if not turn_radius:
+        if not w_ang:
             # We dont need Ackerman calculations, its not turn.
             self.suspension_steer_B_L_pos_msg.data = 0.0
             self.suspension_steer_B_R_pos_msg.data = 0.0
             self.suspension_steer_F_L_pos_msg.data = 0.0
             self.suspension_steer_F_R_pos_msg.data = 0.0
         else:
-            # TODO: Ackerman needed here
-            if turn_radius > 0.0:
-                self.suspension_steer_B_L_pos_msg.data = -0.3
-                self.suspension_steer_B_R_pos_msg.data = -0.3
-                self.suspension_steer_F_L_pos_msg.data = 0.3
-                self.suspension_steer_F_R_pos_msg.data = 0.3
-            else:
-                self.suspension_steer_B_L_pos_msg.data = 0.3
-                self.suspension_steer_B_R_pos_msg.data = 0.3
-                self.suspension_steer_F_L_pos_msg.data = -0.3
-                self.suspension_steer_F_R_pos_msg.data = -0.3
+            self.suspension_steer_B_L_pos_msg.data = -1*math.atan(self.distance_back_center/(v_lin/w_ang-self.distance_axis))
+            self.suspension_steer_B_R_pos_msg.data = -1*math.atan(self.distance_back_center/(v_lin/w_ang+self.distance_axis))
+            self.suspension_steer_F_L_pos_msg.data = math.atan(self.distance_front_center/(v_lin/w_ang-self.distance_axis))
+            self.suspension_steer_F_R_pos_msg.data = math.atan(self.distance_front_center/(v_lin/w_ang+self.distance_axis))
+            
 
         self.suspension_steer_B_L.publish(self.suspension_steer_B_L_pos_msg)
         self.suspension_steer_B_R.publish(self.suspension_steer_B_R_pos_msg)
         self.suspension_steer_F_L.publish(self.suspension_steer_F_L_pos_msg)
         self.suspension_steer_F_R.publish(self.suspension_steer_F_R_pos_msg)
 
-    def set_wheels_speed(self, turning_speed):
+    def set_wheels_speed(self, w_ang, v_lin):
         """
         Sets the turning speed in radians per second
         :param turning_speed: In radians per second
         :return:
         """
-        # TODO: turning_speed for each wheel should change based on ackerman.
 
-        self.back_wheel_L_velocity_msg.data = turning_speed
-        self.back_wheel_R_velocity_msg.data = -1*turning_speed
-        self.front_wheel_L_velocity_msg.data = turning_speed
-        self.front_wheel_R_velocity_msg.data = -1*turning_speed
-        self.middle_wheel_L_velocity_msg.data = turning_speed
-        self.middle_wheel_R_velocity_msg.data = -1*turning_speed
+        if not w_ang:
+            # We dont need Ackerman calculations, its not turn.
+            self.back_wheel_L_velocity_msg.data = v_lin
+            self.back_wheel_R_velocity_msg.data = -1*v_lin
+            self.front_wheel_L_velocity_msg.data = v_lin
+            self.front_wheel_R_velocity_msg.data = -1*v_lin
+            self.middle_wheel_L_velocity_msg.data = v_lin
+            self.middle_wheel_R_velocity_msg.data = -1*v_lin
+        else:
+            self.back_wheel_L_velocity_msg.data = abs(w_ang)*np.sign(v_lin)*((self.distance_back_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)
+            self.back_wheel_R_velocity_msg.data = -1*abs(w_ang)*np.sign(v_lin)*((self.distance_back_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)
+            self.front_wheel_L_velocity_msg.data = abs(w_ang)*np.sign(v_lin)*((self.distance_front_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)
+            self.front_wheel_R_velocity_msg.data = -1*abs(w_ang)*np.sign(v_lin)*((self.distance_front_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)
+            self.middle_wheel_L_velocity_msg.data = v_lin-w_ang*self.distance_axis
+            self.middle_wheel_R_velocity_msg.data = -1*(v_lin+w_ang*self.distance_axis)
 
         self.back_wheel_L.publish(self.back_wheel_L_velocity_msg)
         self.back_wheel_R.publish(self.back_wheel_R_velocity_msg)
@@ -187,35 +191,35 @@ class CuriosityMarsRoverAckerMan(object):
         self.middle_wheel_R.publish(self.middle_wheel_R_velocity_msg)
 
     def move_forwards(self):
-        self.set_wheels_speed(10.0)
-        self.set_turning_radius(None)
+        self.set_wheels_speed(None,10.0)
+        self.set_turning_radius(None,10.0)
 
     def move_backwards(self):
-        self.set_wheels_speed(-10.0)
-        self.set_turning_radius(None)
+        self.set_wheels_speed(None,-10.0)
+        self.set_turning_radius(None,-10.0)
 
     def move_turn_left(self):
-        self.set_wheels_speed(10.0)
-        self.set_turning_radius(1.0)
+        self.set_wheels_speed(1.0, 10.0)
+        self.set_turning_radius(1.0, 10.0)
 
     def move_turn_right(self):
-        self.set_wheels_speed(10.0)
-        self.set_turning_radius(-1.0)
+        self.set_wheels_speed(-1.0, 10.0)
+        self.set_turning_radius(-1.0, 10.0)
 
     def move_turn_stop(self):
-        self.set_wheels_speed(0.0)
-        self.set_turning_radius(None)
+        self.set_wheels_speed(None, 0.0)
+        self.set_turning_radius(None, 0.0)
 
 
     def move_with_cmd_vel(self):
-        wheel_speed = self.cmd_vel_msg.linear.x
-        turning_radius = self.cmd_vel_msg.angular.z
-        if turning_radius == 0.0:
-            turning_radius = None
+        linear_speed = self.cmd_vel_msg.linear.x
+        angular_speed = self.cmd_vel_msg.angular.z
+        if angular_speed == 0.0:
+            angular_speed = None
 
-        rospy.logdebug("turning_radius="+str(turning_radius)+",wheel_speed="+str(wheel_speed))
-        self.set_turning_radius(turning_radius)
-        self.set_wheels_speed(wheel_speed)
+        rospy.logdebug("angular_speed="+str(angular_speed)+",linear_speed="+str(linear_speed))
+        self.set_turning_radius(angular_speed, linear_speed)
+        self.set_wheels_speed(angular_speed, linear_speed)
 
 
 
@@ -226,5 +230,4 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         curiosity_mars_rover_ackerman_object.move_with_cmd_vel()
         rate.sleep()
-
 
