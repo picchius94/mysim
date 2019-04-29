@@ -2,10 +2,15 @@
 import time
 import rospy
 import math
-import numpy as np
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 
+
+def sign_func(num):
+    if (num >= 0):
+        return 1
+    else:
+        return -1
 
 class CuriosityMarsRoverAckerMan(object):
     def __init__(self):
@@ -149,11 +154,19 @@ class CuriosityMarsRoverAckerMan(object):
             self.suspension_steer_F_L_pos_msg.data = 0.0
             self.suspension_steer_F_R_pos_msg.data = 0.0
         else:
-            self.suspension_steer_B_L_pos_msg.data = -1*math.atan(self.distance_back_center/(v_lin/w_ang-self.distance_axis))
-            self.suspension_steer_B_R_pos_msg.data = -1*math.atan(self.distance_back_center/(v_lin/w_ang+self.distance_axis))
-            self.suspension_steer_F_L_pos_msg.data = math.atan(self.distance_front_center/(v_lin/w_ang-self.distance_axis))
-            self.suspension_steer_F_R_pos_msg.data = math.atan(self.distance_front_center/(v_lin/w_ang+self.distance_axis))
-            
+            if (0.0 <= abs(v_lin/w_ang-self.distance_axis) < 1e-10):
+                self.suspension_steer_B_L_pos_msg.data = -math.pi/2
+                self.suspension_steer_F_L_pos_msg.data = math.pi/2
+            else:
+                self.suspension_steer_B_L_pos_msg.data = -1*math.atan(self.distance_back_center/(v_lin/w_ang-self.distance_axis))
+                self.suspension_steer_F_L_pos_msg.data = math.atan(self.distance_front_center/(v_lin/w_ang-self.distance_axis))
+
+            if (0.0 <= abs(v_lin/w_ang+self.distance_axis) < 1e-10):
+                self.suspension_steer_B_R_pos_msg.data = -math.pi/2
+                self.suspension_steer_F_R_pos_msg.data = math.pi/2
+            else:
+               self.suspension_steer_B_R_pos_msg.data = -1*math.atan(self.distance_back_center/(v_lin/w_ang+self.distance_axis))
+               self.suspension_steer_F_R_pos_msg.data = math.atan(self.distance_front_center/(v_lin/w_ang+self.distance_axis))
 
         self.suspension_steer_B_L.publish(self.suspension_steer_B_L_pos_msg)
         self.suspension_steer_B_R.publish(self.suspension_steer_B_R_pos_msg)
@@ -176,10 +189,10 @@ class CuriosityMarsRoverAckerMan(object):
             self.middle_wheel_L_velocity_msg.data = v_lin
             self.middle_wheel_R_velocity_msg.data = -1*v_lin
         else:
-            self.back_wheel_L_velocity_msg.data = abs(w_ang)*np.sign(v_lin)*((self.distance_back_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)
-            self.back_wheel_R_velocity_msg.data = -1*abs(w_ang)*np.sign(v_lin)*((self.distance_back_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)
-            self.front_wheel_L_velocity_msg.data = abs(w_ang)*np.sign(v_lin)*((self.distance_front_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)
-            self.front_wheel_R_velocity_msg.data = -1*abs(w_ang)*np.sign(v_lin)*((self.distance_front_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)
+            self.back_wheel_L_velocity_msg.data = w_ang*sign_func(v_lin/w_ang-self.distance_axis)*((self.distance_back_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)
+            self.front_wheel_L_velocity_msg.data = w_ang*sign_func(v_lin/w_ang-self.distance_axis)*((self.distance_front_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)
+            self.back_wheel_R_velocity_msg.data = -1*w_ang*sign_func(v_lin/w_ang+self.distance_axis)*((self.distance_back_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)
+            self.front_wheel_R_velocity_msg.data = -1*w_ang*sign_func(v_lin/w_ang+self.distance_axis)*((self.distance_front_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)
             self.middle_wheel_L_velocity_msg.data = v_lin-w_ang*self.distance_axis
             self.middle_wheel_R_velocity_msg.data = -1*(v_lin+w_ang*self.distance_axis)
 
