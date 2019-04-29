@@ -20,6 +20,7 @@ class CuriosityMarsRoverAckerMan(object):
         self.distance_axis = 0.3
         self.distance_front_center = 0.5
         self.distance_back_center = 0.5
+        self.wheel_radius = 0.242647
 
         self.publishers_curiosity_d = {}
         self.controller_ns = "curiosity_mars_rover"
@@ -182,19 +183,19 @@ class CuriosityMarsRoverAckerMan(object):
 
         if not w_ang:
             # We dont need Ackerman calculations, its not turn.
-            self.back_wheel_L_velocity_msg.data = v_lin
-            self.back_wheel_R_velocity_msg.data = -1*v_lin
-            self.front_wheel_L_velocity_msg.data = v_lin
-            self.front_wheel_R_velocity_msg.data = -1*v_lin
-            self.middle_wheel_L_velocity_msg.data = v_lin
-            self.middle_wheel_R_velocity_msg.data = -1*v_lin
+            self.back_wheel_L_velocity_msg.data = v_lin/self.wheel_radius
+            self.back_wheel_R_velocity_msg.data = -1*v_lin/self.wheel_radius
+            self.front_wheel_L_velocity_msg.data = v_lin/self.wheel_radius
+            self.front_wheel_R_velocity_msg.data = -1*v_lin/self.wheel_radius
+            self.middle_wheel_L_velocity_msg.data = v_lin/self.wheel_radius
+            self.middle_wheel_R_velocity_msg.data = -1*v_lin/self.wheel_radius
         else:
-            self.back_wheel_L_velocity_msg.data = w_ang*sign_func(v_lin/w_ang-self.distance_axis)*((self.distance_back_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)
-            self.front_wheel_L_velocity_msg.data = w_ang*sign_func(v_lin/w_ang-self.distance_axis)*((self.distance_front_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)
-            self.back_wheel_R_velocity_msg.data = -1*w_ang*sign_func(v_lin/w_ang+self.distance_axis)*((self.distance_back_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)
-            self.front_wheel_R_velocity_msg.data = -1*w_ang*sign_func(v_lin/w_ang+self.distance_axis)*((self.distance_front_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)
-            self.middle_wheel_L_velocity_msg.data = v_lin-w_ang*self.distance_axis
-            self.middle_wheel_R_velocity_msg.data = -1*(v_lin+w_ang*self.distance_axis)
+            self.back_wheel_L_velocity_msg.data = w_ang*sign_func(v_lin/w_ang-self.distance_axis)*((self.distance_back_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)/self.wheel_radius
+            self.front_wheel_L_velocity_msg.data = w_ang*sign_func(v_lin/w_ang-self.distance_axis)*((self.distance_front_center**2+(v_lin/w_ang-self.distance_axis)**2)**0.5)/self.wheel_radius
+            self.back_wheel_R_velocity_msg.data = -1*w_ang*sign_func(v_lin/w_ang+self.distance_axis)*((self.distance_back_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)/self.wheel_radius
+            self.front_wheel_R_velocity_msg.data = -1*w_ang*sign_func(v_lin/w_ang+self.distance_axis)*((self.distance_front_center**2+(v_lin/w_ang+self.distance_axis)**2)**0.5)/self.wheel_radius
+            self.middle_wheel_L_velocity_msg.data = (v_lin-w_ang*self.distance_axis)/self.wheel_radius
+            self.middle_wheel_R_velocity_msg.data = -1*(v_lin+w_ang*self.distance_axis)/self.wheel_radius
 
         self.back_wheel_L.publish(self.back_wheel_L_velocity_msg)
         self.back_wheel_R.publish(self.back_wheel_R_velocity_msg)
@@ -231,8 +232,8 @@ class CuriosityMarsRoverAckerMan(object):
             angular_speed = None
 
         rospy.logdebug("angular_speed="+str(angular_speed)+",linear_speed="+str(linear_speed))
-        self.set_turning_radius(angular_speed, linear_speed)
-        self.set_wheels_speed(angular_speed, linear_speed)
+        #self.set_turning_radius(angular_speed, linear_speed)
+        #self.set_wheels_speed(angular_speed, linear_speed)
 
 
 
