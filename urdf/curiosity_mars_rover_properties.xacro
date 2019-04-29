@@ -53,7 +53,7 @@
 	<xacro:property name="suspension_steer_B_L_Y" value="0.21019"/>
 	<xacro:property name="suspension_steer_B_L_Z" value="0.450036"/>
 
-	<xacro:property name="suspension_steer_limit" value="0.6"/>
+	<xacro:property name="suspension_steer_limit" value="1.5708"/>
 	<xacro:property name="suspension_steer_effort" value="10000.0"/>
 	<xacro:property name="suspension_steer_velocity" value="10.0"/>
 
