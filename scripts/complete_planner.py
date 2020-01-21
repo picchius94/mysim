@@ -466,7 +466,7 @@ def main(argv):
         
         # Commanding Actions
         if np.all(goal_xy == p2):
-            if goal_dist > 1.3:
+            if goal_dist > 1.7:
                 cmd_object.action_command(r_rot, theta_rot)
                 cmd_object.action_command(r_fw1, theta_fw1)
                 cmd_object.action_command(r_fw2, theta_fw2, goal=goal_xy)
@@ -474,7 +474,7 @@ def main(argv):
                 cmd_object.action_command(r_rot, theta_rot)
                 cmd_object.action_command(r_fw1, theta_fw1, goal=goal_xy)
         else:
-            if goal_dist > 1.3:
+            if goal_dist > 1.7:
                 cmd_object.action_command(r_rot, theta_rot)
                 cmd_object.action_command(r_fw1, theta_fw1)
             else:

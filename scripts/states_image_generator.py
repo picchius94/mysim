@@ -285,7 +285,7 @@ def target_reward_advanced(action_id, goal):
     else:
         th0 = 0
     
-    if np.linalg.norm(goal) > 1.3:
+    if np.linalg.norm(goal) > 1.7:
         (r, dth) = forward_actions[fw1_id]   
         if r is not None: #no point turn rotations
             if dth is not None: # no straight lines

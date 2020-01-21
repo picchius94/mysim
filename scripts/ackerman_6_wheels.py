@@ -2,9 +2,11 @@
 import time
 import rospy
 import math
+import numpy as np
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
-
+from nav_msgs.msg import Odometry
+from scipy.spatial.transform import Rotation as R
 
 def sign_func(num):
     if (num >= 0):
@@ -43,7 +45,11 @@ class CuriosityMarsRoverAckerMan(object):
                                     "suspension_steer_F_L_joint_position_controller",
                                     "suspension_steer_F_R_joint_position_controller"
                                 ]
-
+        
+        self.x_stab = None
+        self.y_stab = None
+        self.th_stab = None
+        
         for controller_name in self.controllers_list:
             topic_name = "/"+self.controller_ns+"/"+controller_name+"/"+self.controller_command
             self.publishers_curiosity_d[controller_name] = rospy.Publisher(
@@ -58,11 +64,30 @@ class CuriosityMarsRoverAckerMan(object):
         self.cmd_vel_msg = Twist()
         cmd_vel_topic = "/cmd_vel"
         rospy.Subscriber(cmd_vel_topic, Twist, self.cmd_vel_callback)
+        rospy.Subscriber('/curiosity_mars_rover/odom', Odometry, self.odom_callback)
+        time.sleep(2)
 
         rospy.logwarn("CuriosityMarsRoverAckerMan...READY")
 
     def cmd_vel_callback(self, msg):
         self.cmd_vel_msg = msg
+    
+    def odom_callback(self, data):
+        self.x = data.pose.pose.position.x
+        self.y = data.pose.pose.position.y
+        q_x = data.pose.pose.orientation.x
+        q_y = data.pose.pose.orientation.y
+        q_z = data.pose.pose.orientation.z
+        q_w = data.pose.pose.orientation.w
+        r = R.from_quat([q_x,q_y,q_z,q_w])
+        ypr = r.as_euler('zyx', degrees=False)
+        th = ypr[0] - math.pi # yaw angle
+        if th < 0:
+            self.th = th + 2*math.pi
+        elif th > 2*math.pi:
+            self.th = th - 2*math.pi
+        else:
+            self.th = th
 
     def wait_publishers_to_be_ready(self):
 
@@ -204,27 +229,39 @@ class CuriosityMarsRoverAckerMan(object):
         self.front_wheel_R.publish(self.front_wheel_R_velocity_msg)
         self.middle_wheel_L.publish(self.middle_wheel_L_velocity_msg)
         self.middle_wheel_R.publish(self.middle_wheel_R_velocity_msg)
-
-    def move_forwards(self):
-        self.set_wheels_speed(None,10.0)
-        self.set_turning_radius(None,10.0)
-
-    def move_backwards(self):
-        self.set_wheels_speed(None,-10.0)
-        self.set_turning_radius(None,-10.0)
-
-    def move_turn_left(self):
-        self.set_wheels_speed(1.0, 10.0)
-        self.set_turning_radius(1.0, 10.0)
-
-    def move_turn_right(self):
-        self.set_wheels_speed(-1.0, 10.0)
-        self.set_turning_radius(-1.0, 10.0)
-
-    def move_turn_stop(self):
-        self.set_wheels_speed(None, 0.0)
-        self.set_turning_radius(None, 0.0)
-
+    
+    
+    
+    def rover_stabilizer(self):
+        if self.x_stab==None or self.y_stab==None or self.th_stab==None:
+            # first iteration of stabilizer I get current position
+            self.x_stab = self.x
+            self.y_stab = self.y
+            self.th_stab = self.th
+        else:
+            # Get position, compare with stable position and command corrections
+            x_stab_new = self.x
+            y_stab_new = self.y
+            th_stab_new = self.th
+            dr_local = np.array([0.0,0.0])
+            
+            # Delta m
+            dr = np.array([x_stab_new - self.x_stab, y_stab_new - self.y_stab])
+            dth = th_stab_new - self.th_stab
+            
+            dr_local[0] = np.cos(self.th_stab)*dr[0] + np.sin(self.th_stab)*dr[1]
+            dr_local[1] = np.cos(self.th_stab)*dr[1] - np.sin(self.th_stab)*dr[0]
+            
+            if dr_local[1] > 0.01:
+                self.set_turning_radius(None, -0.1)
+                self.set_wheels_speed(None, -0.1)
+            elif dr_local[1] < 0.01:
+                self.set_turning_radius(None, 0.1)
+                self.set_wheels_speed(None, 0.1)
+            else:
+                self.set_turning_radius(None, 0)
+                self.set_wheels_speed(None, 0)
+            
 
     def move_with_cmd_vel(self):
         linear_speed = self.cmd_vel_msg.linear.x
@@ -232,9 +269,17 @@ class CuriosityMarsRoverAckerMan(object):
         if angular_speed == 0.0:
             angular_speed = None
 
-        rospy.logdebug("angular_speed="+str(angular_speed)+",linear_speed="+str(linear_speed))
-        self.set_turning_radius(angular_speed, linear_speed)
-        self.set_wheels_speed(angular_speed, linear_speed)
+        if linear_speed or angular_speed:
+            # Reset stabilizer for next time
+            self.x_stab = None
+            self.y_stab = None
+            self.th_stab = None
+            # Commanding wheels
+            rospy.logdebug("angular_speed="+str(angular_speed)+",linear_speed="+str(linear_speed))
+            self.set_turning_radius(angular_speed, linear_speed)
+            self.set_wheels_speed(angular_speed, linear_speed)
+        else:
+            self.rover_stabilizer()
 
 
 
