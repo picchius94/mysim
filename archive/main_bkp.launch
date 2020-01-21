@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+	<arg name="world" default="flat"/>
+	<arg name="x" default="0.0" />
+    <arg name="y" default="0.0" />
+    <arg name="z" default="0.9" />
+    <arg name="roll" default="0.0"/>
+    <arg name="pitch" default="0.0"/>
+    <arg name="yaw" default="3.14159265" />
+
+	
+	<include file="$(find mysim)/launch/hmap.launch">
+		<arg name="world_n" value="$(arg world).world"/>
+	</include>
+	<include file="$(find mysim)/launch/rover_spawn.launch">
+		<arg name="x_n" value="$(arg x)" />
+    	<arg name="y_n" value="$(arg y)" />
+    	<arg name="z_n" value="$(arg z)" />
+    	<arg name="roll_n" value="$(arg roll)"/>
+    	<arg name="pitch_n" value="$(arg pitch)"/>
+    	<arg name="yaw_n" value="$(arg yaw)" />
+	</include>
+	<include file="$(find mysim)/launch/rover_control.launch"/>
+	<include file="$(find mysim)/launch/rover_systems.launch"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find mysim)/rviz/rover.rviz"/>
+
+</launch>

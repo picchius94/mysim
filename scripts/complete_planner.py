@@ -251,24 +251,41 @@ def local_planner(model, Zt, goal_xy):
         a1 = np.where(rew >= rew_target)
         a2 = np.where (rew < (rew_target+1))
         actions_to_target = np.intersect1d(a1,a2)
+        a_no_rotation = actions_to_target[actions_to_target > n_fw1*n_fw2*(n_rot-1) - 1] 
         
-        # actions without initial rotation have priority
-        a_no_rotation = actions_to_target[actions_to_target > n_fw1*n_fw2*(n_rot-1) - 1]
-        if len(a_no_rotation):
+        # actions without initial rotation and straight line first action have priority 1
+        a_no_rotation_straight_first = a_no_rotation[a_no_rotation < n_fw1*n_fw2*(n_rot-1) + n_fw2]
+        if len(a_no_rotation_straight_first):
             # Prediction Model
-            seq_actions = DataSequence(Zt,a_no_rotation)
+            seq_actions = DataSequence(Zt,a_no_rotation_straight_first)
             costs = model.predict_generator(seq_actions)
             c = np.array(costs).squeeze(axis=2)
             # I select the action with minimum maximum metric
             max_metric = np.max(c,axis = 0)
             min_risk = np.argmin(max_metric)
             if max_metric[min_risk] < prediction_threshold:
-                sel_act = a_no_rotation[min_risk]
+                sel_act = a_no_rotation_straight_first[min_risk]
+                pred_c_step = c[0][min_risk]
+                pred_c_ob = c[1][min_risk]
+                pred_c_tilt = c[2][min_risk]
+                break
+        # actions without initial rotation and arc line first action have priority 2
+        a_no_rotation_arc_first = a_no_rotation[a_no_rotation > n_fw1*n_fw2*(n_rot-1) + n_fw2 -1]
+        if len(a_no_rotation_arc_first):
+            # Prediction Model
+            seq_actions = DataSequence(Zt,a_no_rotation_arc_first)
+            costs = model.predict_generator(seq_actions)
+            c = np.array(costs).squeeze(axis=2)
+            # I select the action with minimum maximum metric
+            max_metric = np.max(c,axis = 0)
+            min_risk = np.argmin(max_metric)
+            if max_metric[min_risk] < prediction_threshold:
+                sel_act = a_no_rotation_arc_first[min_risk]
                 pred_c_step = c[0][min_risk]
                 pred_c_ob = c[1][min_risk]
                 pred_c_tilt = c[2][min_risk]
                 break 
-        # if I didnt find an action without rotation I check other actions
+        # all other actions have priority 3
         a_rotation = actions_to_target[actions_to_target < n_fw1*n_fw2*(n_rot-1)]
         # Prediction Model
         seq_actions = DataSequence(Zt,a_rotation)
@@ -302,12 +319,23 @@ def local_planner(model, Zt, goal_xy):
     
     
 def main(argv):
-    if len(argv)!= 3:
-        print("Wrong parameters number")
+    if len(argv)< 3:
+        print()
+        print("Not enough parameters")
+        print("Usage: <x point 0> <y point 0> <x point 1> <y point 1> ... <x point n> <y point n>")
+        return -1
+    if not len(argv)%2:
+        print()
+        print("Odd number of parameters")
+        print("Usage: <x point 0> <y point 0> <x point 1> <y point 1> ... <x point n> <y point n>")
         return -1
     else:
-        x2 = float(argv[1])
-        y2 = float(argv[2])
+        num_points = (len(argv) - 1)/2
+        p_list = []
+        for i in range(0,len(argv) - 1,2):
+            p_list.append([float(argv[i+1]), float(argv[i+2])])
+    
+    print("{} navigation points selected".format(num_points))
     ## Load Trained Network Model
     model = tf.keras.models.load_model(MODEL_DIR, custom_objects={'f1_': f1_, 'precision_': precision_, 'recall_': recall_})   
       
@@ -317,12 +345,12 @@ def main(argv):
     # Load Class to send Commands
     cmd_object = command_class()
     
-    # Defining Global Trajectory Points
-    p1 = np.array([0.0,0.0])
-    p2 = np.array([x2,y2])
+    # Defining First Global Trajectory Point
+    p1 = np.array(p_list[0])
+    p2 = np.array(p_list[1])
+    num_points_to_end = num_points -2
     V = p2 - p1
-    
-    print("Final Goal Position")
+    print("First Goal Point Position")
     print("X: {0:.3f}m".format(p2[0]))
     print("Y: {0:.3f}m".format(p2[1]))
     print()
@@ -335,8 +363,8 @@ def main(argv):
     goal_xy_local = np.array([0.0,0.0])
     
     ## Loop from Initial to final position of global trajectory
-    condition = True
-    while condition:
+    done = False
+    while not done:
         # Getting Environment Map (To modify with acquired map)
         id_t = 0
         with h5py.File(path_total_terrains, 'r') as f_data:
@@ -365,7 +393,6 @@ def main(argv):
             # If final target is within my circle, this is set as goal
             goal_xy = p2
             flag_find = True
-            condition = False
         else:
             # Otherwise I look for the intersect of the final path with the circle border
             for r in rads:
@@ -431,21 +458,43 @@ def main(argv):
             print("Selected Action1: rad {0:.3f}m, th {1:.1f}°".format(r_fw1, theta_fw1*180/math.pi))
         else:
             print("Selected Action1: straight {0:.3f}m".format(r_fw1))
-        if goal_dist > 1.3:
-            if theta_fw2 is not None:
-                print("Selected Action2: rad {0:.3f}m, th {1:.1f}°".format(r_fw2, theta_fw2*180/math.pi))
-            else:
-                print("Selected Action2: straight {0:.3f}m".format(r_fw2))
+        if theta_fw2 is not None:
+            print("Selected Action2: rad {0:.3f}m, th {1:.1f}°".format(r_fw2, theta_fw2*180/math.pi))
+        else:
+            print("Selected Action2: straight {0:.3f}m".format(r_fw2))
         #time.sleep(5)
         
         # Commanding Actions
-        if goal_dist > 1.3:
-            cmd_object.action_command(r_rot, theta_rot)
-            cmd_object.action_command(r_fw1, theta_fw1)
-            cmd_object.action_command(r_fw2, theta_fw2, goal=goal_xy)
+        if np.all(goal_xy == p2):
+            if goal_dist > 1.3:
+                cmd_object.action_command(r_rot, theta_rot)
+                cmd_object.action_command(r_fw1, theta_fw1)
+                cmd_object.action_command(r_fw2, theta_fw2, goal=goal_xy)
+            else:
+                cmd_object.action_command(r_rot, theta_rot)
+                cmd_object.action_command(r_fw1, theta_fw1, goal=goal_xy)
         else:
-            cmd_object.action_command(r_rot, theta_rot)
-            cmd_object.action_command(r_fw1, theta_fw1, goal=goal_xy)
+            if goal_dist > 1.3:
+                cmd_object.action_command(r_rot, theta_rot)
+                cmd_object.action_command(r_fw1, theta_fw1)
+            else:
+                cmd_object.action_command(r_rot, theta_rot)
+                cmd_object.action_command(r_fw1, theta_fw1, goal=goal_xy)
+        
+        # Upon point achievement Select New Point or Done        
+        if np.all(goal_xy == p2):
+            if num_points_to_end > 0:
+                p1 = p2
+                p2 = np.array(p_list[int(num_points-num_points_to_end)])
+                V = p2 - p1
+                num_points_to_end -= 1
+                print("\n\n\n\n")
+                print("New Goal Point Position")
+                print("X: {0:.3f}m".format(p2[0]))
+                print("Y: {0:.3f}m".format(p2[1]))
+            else:
+                done = True
+                
             
 if __name__ == "__main__":
     rospy.init_node("Path_Planner_node", log_level=rospy.INFO)
