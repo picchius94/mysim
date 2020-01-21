@@ -8,7 +8,7 @@
     <arg name="z" default="0.9" />
     <arg name="roll" default="0.0"/>
     <arg name="pitch" default="0.0"/>
-    <arg name="yaw" default="0.0" />
+    <arg name="yaw" default="3.14" />
 
 	
 	<include file="$(find mysim)/launch/hmap.launch">
@@ -24,6 +24,6 @@
 	</include>
 	<include file="$(find mysim)/launch/rover_control.launch"/>
 	<include file="$(find mysim)/launch/rover_systems.launch"/>
-<!-->	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find mysim)/rviz/rover.rviz"/>
-<-->
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find mysim)/rviz/rover.rviz"/>
+
 </launch>

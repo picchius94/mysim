@@ -17,9 +17,9 @@ class CuriosityMarsRoverAckerMan(object):
         rospy.loginfo("CuriosityRoverAckerMan Initialising...")
 
         # TODO: Ackerman stuff
-        self.distance_axis = 0.3
-        self.distance_front_center = 0.5
-        self.distance_back_center = 0.5
+        self.distance_axis = 1
+        self.distance_front_center = 1.2
+        self.distance_back_center = 1.2
         self.wheel_radius = 0.242647
 
         self.publishers_curiosity_d = {}
@@ -232,8 +232,8 @@ class CuriosityMarsRoverAckerMan(object):
             angular_speed = None
 
         rospy.logdebug("angular_speed="+str(angular_speed)+",linear_speed="+str(linear_speed))
-        #self.set_turning_radius(angular_speed, linear_speed)
-        #self.set_wheels_speed(angular_speed, linear_speed)
+        self.set_turning_radius(angular_speed, linear_speed)
+        self.set_wheels_speed(angular_speed, linear_speed)
 
 
 
