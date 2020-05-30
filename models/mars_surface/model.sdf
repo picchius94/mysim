@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="mars_surface">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <surface>
+          <friction>
+          <ode>
+            <mu>0.8</mu>
+          </ode>
+          </friction>
+          <contact>
+          <ode>
+            <kp>1000000</kp>
+            <kd>100</kd>
+            <min_depth>0.00</min_depth>
+          </ode>
+          </contact>
+        </surface>
+        <geometry>
+          <heightmap>
+            <uri>model://mars_surface/materials/textures/mars_surface.png</uri>
+            <size>257 257 15</size>
+            <pos>0.0 0.0 0.0</pos>
+          </heightmap>
+        </geometry>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <heightmap>
+            <texture>
+              <diffuse>model://mars_surface/materials/textures/surface.jpg</diffuse>
+              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <size>1</size>
+            </texture>
+            <uri>model://mars_surface/materials/textures/mars_surface.png</uri>
+            <size>257 257 15</size>
+            <pos>0.0 0.0 0.0</pos>
+          </heightmap>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

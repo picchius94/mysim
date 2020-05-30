@@ -8,6 +8,9 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from scipy.spatial.transform import Rotation as R
 
+speed_stabilizer = 0.15     # in m/s
+stabilizer_threshold = 0.1 # in metres
+
 def sign_func(num):
     if (num >= 0):
         return 1
@@ -18,7 +21,7 @@ class CuriosityMarsRoverAckerMan(object):
     def __init__(self):
         rospy.loginfo("CuriosityRoverAckerMan Initialising...")
 
-        # TODO: Ackerman stuff
+        # Ackerman stuff
         self.distance_axis = 1.08
         self.distance_axis_middle = 1.2
         self.distance_front_center = 1.2
@@ -252,12 +255,12 @@ class CuriosityMarsRoverAckerMan(object):
             dr_local[0] = np.cos(self.th_stab)*dr[0] + np.sin(self.th_stab)*dr[1]
             dr_local[1] = np.cos(self.th_stab)*dr[1] - np.sin(self.th_stab)*dr[0]
             
-            if dr_local[1] > 0.01:
-                self.set_turning_radius(None, -0.1)
-                self.set_wheels_speed(None, -0.1)
-            elif dr_local[1] < 0.01:
-                self.set_turning_radius(None, 0.1)
-                self.set_wheels_speed(None, 0.1)
+            if dr_local[1] > stabilizer_threshold:
+                self.set_turning_radius(None, -speed_stabilizer)
+                self.set_wheels_speed(None, -speed_stabilizer)
+            elif dr_local[1] < -stabilizer_threshold:
+                self.set_turning_radius(None, speed_stabilizer)
+                self.set_wheels_speed(None, speed_stabilizer)
             else:
                 self.set_turning_radius(None, 0)
                 self.set_wheels_speed(None, 0)
